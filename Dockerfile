@@ -1,14 +1,31 @@
-# Imagen base Java
+# ======================
+# 1️⃣ Build stage
+# ======================
+FROM maven:3.9.9-eclipse-temurin-17 AS build
+
+WORKDIR /build
+
+# Copiamos el pom primero (cache dependencias)
+COPY pom.xml .
+RUN mvn dependency:go-offline
+
+# Copiamos el código
+COPY src ./src
+
+# Compilamos
+RUN mvn clean package -DskipTests
+
+
+# ======================
+# 2️⃣ Runtime stage
+# ======================
 FROM eclipse-temurin:17-jdk-alpine
 
-# Directorio de trabajo
 WORKDIR /app
 
-# Copiar el jar (asegúrate del nombre)
-COPY target/rec-notification-0.0.1-SNAPSHOT.jar app.jar
+# Copiamos el JAR generado en el build stage
+COPY --from=build /build/target/rec-notification-0.0.1-SNAPSHOT.jar app.jar
 
-# Render inyecta la variable PORT
 EXPOSE 8080
 
-# Arranque
 ENTRYPOINT ["java","-jar","/app/app.jar"]
